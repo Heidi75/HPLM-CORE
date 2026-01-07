@@ -1,1 +1,32 @@
+/* Base System reset */
+body, html {
+  margin: 0;
+  padding: 0;
+  background-color: #0a0a0a;
+  color: #00ff41;
+  font-family: 'Courier New', Courier, monospace;
+}
 
+/* Layer-specific utility classes */
+.layer-card {
+  border: 1px solid #333;
+  padding: 1rem;
+  margin: 10px 0;
+  background: #111;
+}
+
+.audit-trace {
+  color: #888;
+  font-size: 0.75rem;
+  border-left: 2px solid #444;
+  padding-left: 10px;
+}
+
+/* The Veto Signal */
+.veto-active {
+  color: #ff0000;
+  text-transform: uppercase;
+  font-weight: bold;
+  border: 2px solid #ff0000;
+  padding: 5px;
+}
