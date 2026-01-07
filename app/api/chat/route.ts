@@ -1,5 +1,7 @@
 import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
+import { HPLM_Token_Schema } from '@/layers/2-ftl-formalizer/token-generator';
+// This tells Vercel: "Use the Core Skeleton logic to package this chat."
 
 export const maxDuration = 30; // Necessary for cloud functions
 
