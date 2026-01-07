@@ -33,6 +33,17 @@ export default function HPLM_Core_Interface() {
         display: 'flex',
         gap: '10px'
       }}>
+
+        // Inside your HPLM_Core_Interface function
+const [files, setFiles] = useState<FileList | null>(null);
+
+// Add a file input before the text input
+<input 
+  type="file" 
+  multiple 
+  onChange={(e) => setFiles(e.target.files)} 
+  style={{ color: '#888', fontSize: '0.8rem' }}
+/>
         <input
           value={input}
           onChange={handleInputChange}
