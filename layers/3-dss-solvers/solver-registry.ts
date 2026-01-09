@@ -1,22 +1,43 @@
-export interface IDomainSolver {
-  domainName: string;
-  execute: (params: any) => Promise<any>;
+// layers/3-dss-solvers/solver-registry.ts
+
+export interface LayerResult {
+  layer: number;
+  status: 'SUCCESS' | 'FAIL' | 'BYPASSED' | 'UNCONFIGURED';
+  message: string;
+  data?: any;
 }
 
 class HPLM_Kernel {
-  private activeSolver: IDomainSolver | null = null;
+  private activeSolver: any = null;
 
-  // The "Skeleton" hook: This is where the future client's engine plugs in
-  public install(solver: IDomainSolver) {
+  public install(solver: any) {
     this.activeSolver = solver;
   }
 
-  async process(token: any) {
+  async process(token: any): Promise<LayerResult> {
     if (!this.activeSolver) {
-      // This allows Layer 6 to still generate a "System Idle" audit log
-      return { status: "IDLE", message: "HPLM Skeleton: Waiting for Domain Injection." };
+      return {
+        layer: 3,
+        status: 'UNCONFIGURED',
+        message: `HPLM Skeleton Mode: No domain solver registered for subject: ${token.payload.subject}`
+      };
     }
-    return await this.activeSolver.execute(token.payload.parameters);
+    
+    try {
+      const result = await this.activeSolver.execute(token.payload.parameters);
+      return {
+        layer: 3,
+        status: 'SUCCESS',
+        message: 'Domain logic executed successfully.',
+        data: result
+      };
+    } catch (e) {
+      return {
+        layer: 3,
+        status: 'FAIL',
+        message: 'Solver execution failed.'
+      };
+    }
   }
 }
 
