@@ -2,7 +2,6 @@ import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { hplmKernel, HPLM_AuditPacket } from '@/layers/3-dss-solvers/solver-registry';
 
-// Free tier limit is 10. Let's set it to 10 to avoid Vercel rejection.
 export const maxDuration = 10; 
 export const dynamic = 'force-dynamic';
 
@@ -51,21 +50,22 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("HPLM_CRITICAL_FAILURE:", error);
-    // Explicitly returning a 500 so we know the POST reached the server
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*' // Added for phone connectivity
+      }
     });
   }
 }
 
-// Added this to explicitly handle the 405 issue
 export async function OPTIONS() {
   return new Response(null, {
     status: 204,
     headers: {
-      'Allow': 'POST',
-      'Access-Control-Allow-Methods': 'POST',
+      'Access-Control-Allow-Origin': '*', // Allows your phone to talk to the server
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
