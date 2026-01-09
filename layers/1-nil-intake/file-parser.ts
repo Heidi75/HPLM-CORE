@@ -4,15 +4,15 @@
  */
 
 export async function parseIncomingFile(file: { base64: string, type: string }) {
-  console.log(`[LAYER_1_NIL] Parsing file type: ${file.type}`);
+  console.log(`[LAYER_1_NIL] Ingesting: ${file.type}`);
 
-  // In the future, this is where OCR (Optical Character Recognition) 
-  // or PDF-extraction libraries like 'pdf-parse' would live.
-  
-  // For now, it passes the data to the LLM with a 
-  // "Data Extraction" instruction to find Rigid Variables.
+  // We explicitly label the data so the Logic Path in Layer 6 
+  // has something to "Trace".
   return {
-    rawContent: file.base64,
+    rawContent: `---START_RAW_INGESTION---
+    FILE_TYPE: ${file.type}
+    DATA_CONTENT: ${file.base64}
+    ---END_RAW_INGESTION---`,
     mimeType: file.type,
     extractionStatus: "READY_FOR_FORMALIZATION"
   };
