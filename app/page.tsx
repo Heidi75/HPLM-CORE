@@ -4,9 +4,21 @@ import { useState } from 'react';
 
 export default function HPLM_Core_Interface() {
   const [files, setFiles] = useState<FileList | null>(null);
-  const [showAudit, setShowAudit] = useState(false); // Toggle for Layer 6 Traceback
+  const [showAudit, setShowAudit] = useState(false);
 
   const { messages, input, handleInputChange, handleSubmit, data } = useChat();
+
+  // --- NEW: DOWNLOAD AUDIT FUNCTION ---
+  const downloadAuditLog = () => {
+    if (!data) return;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `HPLM_Audit_Trace_${new Date().getTime()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const convertToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -35,22 +47,34 @@ export default function HPLM_Core_Interface() {
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '150px', color: '#00ff41', fontFamily: 'monospace' }}>
       
-      {/* HEADER / LAYER 6 ACCESS */}
+      {/* HEADER */}
       <header style={{ display: 'flex', justifyContent: 'space-between', padding: '20px 0', borderBottom: '1px solid #333' }}>
         <h1 style={{ fontSize: '1rem', margin: 0 }}>HPLM_CORE_v1.0</h1>
-        <button 
-          onClick={() => setShowAudit(!showAudit)}
-          style={{ background: 'transparent', color: '#888', border: '1px solid #444', cursor: 'pointer', fontSize: '0.7rem' }}
-        >
-          {showAudit ? '[ HIDE_AUDIT_TRACE ]' : '[ VIEW_AUDIT_TRACE ]'}
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            onClick={() => setShowAudit(!showAudit)}
+            style={{ background: 'transparent', color: '#888', border: '1px solid #444', cursor: 'pointer', fontSize: '0.7rem' }}
+          >
+            {showAudit ? '[ HIDE_AUDIT ]' : '[ VIEW_AUDIT ]'}
+          </button>
+          
+          {/* --- NEW: THE DOWNLOAD BUTTON --- */}
+          {data && (
+            <button 
+              onClick={downloadAuditLog}
+              style={{ background: '#0070f3', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.7rem', padding: '0 5px' }}
+            >
+              [ DOWNLOAD_TRACE ]
+            </button>
+          )}
+        </div>
       </header>
 
-      {/* LAYER 6: TRACEBACK & AUDIT PANEL */}
+      {/* LAYER 6: TRACEBACK PANEL */}
       {showAudit && (
         <section style={{ background: '#050505', border: '1px solid #0070f3', padding: '10px', marginTop: '10px', fontSize: '0.75rem' }}>
           <h2 style={{ color: '#0070f3', margin: '0 0 10px 0' }}>[LAYER_6_FORENSIC_TRACE]</h2>
-          <pre style={{ whiteSpace: 'pre-wrap' }}>
+          <pre style={{ whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto' }}>
             {data ? JSON.stringify(data, null, 2) : "Listening for logic-path metadata..."}
           </pre>
         </section>
@@ -65,7 +89,6 @@ export default function HPLM_Core_Interface() {
               padding: '10px', 
               background: m.role === 'user' ? '#111' : '#001a00',
               borderLeft: `3px solid ${m.role === 'user' ? '#0070f3' : '#00ff41'}`,
-              // Veto styling: if response contains VETO, highlight red
               borderColor: m.content.includes('VETO') ? '#ff0000' : (m.role === 'user' ? '#0070f3' : '#00ff41')
             }}>
               <small style={{ color: '#666', display: 'block' }}>{m.role.toUpperCase()}</small>
@@ -100,4 +123,4 @@ export default function HPLM_Core_Interface() {
       </form>
     </div>
   );
-}
+    }
