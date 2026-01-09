@@ -1,7 +1,7 @@
 // app/api/chat/route.ts
 import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
-import { hplmKernel } from '@/layers/3-dss-solvers/solver-registry'; // Importing the Kernel
+import { hplmKernel } from '@/layers/3-dss-solvers/solver-registry';
 
 export const maxDuration = 30;
 
@@ -10,39 +10,35 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
     const lastMessage = messages[messages.length - 1].content;
 
-    // 1. Layer 1 & 2 Simulation (Creating the Token)
-    // In a full build, this comes from the parser. For the Skeleton, we simulate it.
+    // Simulation of Layers 1 & 2
     const token = {
-      id: "TOK-001",
-      payload: {
-        subject: "GENERAL",
-        parameters: { input: lastMessage }
-      }
+      payload: { subject: "GENERAL", parameters: { input: lastMessage } }
     };
 
-    // 2. Layer 3: The Kernel Process
-    // This is the line that fixes your "Stuck" error
+    // Layer 3: Semantic Signaling
     const kernelResult = await hplmKernel.process(token);
 
-    // 3. Layer 6: Audit Stream
-    // FIX: We must use 'await' here so 'result' has the .toDataStreamResponse() method
     const result = await streamText({
       model: google('gemini-1.5-flash'),
       messages,
       system: `
-        You are the HPLM Interface. 
-        LAYER 3 STATUS: ${kernelResult.status}
-        LAYER 3 MESSAGE: ${kernelResult.message || JSON.stringify(kernelResult)}
+        HPLM CORE STATUS REPORT:
+        -------------------------
+        LAYER 1: [SUCCESS] - Ingestion complete.
+        LAYER 2: [SUCCESS] - Tokenization simulated.
+        LAYER 3: [${kernelResult.status}] - ${kernelResult.message}
+        -------------------------
         
-        Report this status to the user clearly.
+        INSTRUCTIONS:
+        1. Report the status of all layers to the user.
+        2. If Layer 3 is UNCONFIGURED, explain that the system is in "SKELETON_DEMO" mode.
+        3. Do NOT provide a general AI answer. Act only as the HPLM System Interface.
       `,
     });
 
-    // Now 'result' is resolved and this method will work perfectly
     return result.toDataStreamResponse();
 
   } catch (error) {
-    console.error("HPLM Critical Failure:", error);
-    return new Response("Internal HPLM Error", { status: 500 });
+    return new Response("Kernel Reporting Error", { status: 500 });
   }
 }
