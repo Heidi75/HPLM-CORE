@@ -2,8 +2,6 @@ import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { hplmKernel, HPLM_AuditPacket } from '@/layers/3-dss-solvers/solver-registry'; 
 
-const ACTIVE_SOLVER = 'general'; // Hardcoded for now
-
 export const maxDuration = 10;
 export const dynamic = 'force-dynamic';
 
