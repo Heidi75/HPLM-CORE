@@ -1,38 +1,75 @@
 'use client';
 
-import { useChat } from 'ai/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+
+type Message = {
+  role: 'user' | 'assistant';
+  content: string;
+  auditLog?: any;
+};
 
 export default function HPLM_Interface() {
   const [showAudit, setShowAudit] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('STANDBY');
-  const [auditTrail, setAuditTrail] = useState<any[]>([]); // Store all audit logs
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [auditTrail, setAuditTrail] = useState<any[]>([]);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: '/api/chat', 
-    onResponse: (response) => {
-      if (response.ok) {
-        setConnectionStatus('CONNECTED_TO_PYRAMID');
-        
-        // Capture audit data from headers
-        const auditData = response.headers.get('X-HPLM-Audit-Data');
-        if (auditData) {
-          try {
-            const parsed = JSON.parse(auditData);
-            setAuditTrail(prev => [...prev, parsed]);
-          } catch (e) {
-            console.error('Failed to parse audit data', e);
-          }
-        }
-      } else {
-        setConnectionStatus(`ERROR_${response.status}`);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+    setConnectionStatus('INGESTING...');
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map(m => ({ 
+            role: m.role, 
+            content: m.content 
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
-    },
-    onError: (err) => {
-      setConnectionStatus('FAILED_TO_REACH_API');
-      console.error(err);
+
+      const data = await response.json();
+      
+      // Store audit log
+      if (data.auditLog) {
+        setAuditTrail(prev => [...prev, data.auditLog]);
+      }
+
+      // Add assistant response
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: data.modelResponse || JSON.stringify(data.auditLog, null, 2),
+        auditLog: data.auditLog,
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+      setConnectionStatus('CONNECTED_TO_PYRAMID');
+      
+    } catch (error: any) {
+      console.error('Error:', error);
+      setConnectionStatus(`FAILED_TO_REACH_API: ${error.message}`);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `ERROR: ${error.message}`,
+      }]);
+    } finally {
+      setIsLoading(false);
     }
-  });
+  };
 
   const downloadFullAudit = () => {
     const reportHeader = `
@@ -43,7 +80,7 @@ REPORT GENERATED   : ${new Date().toISOString()}
 SYSTEM ARCHITECTURE: 7-LAYER NEURAL-SYMBOLIC PYRAMID
 ===========================================================
 
-COMPLETE 7-LAYER AUDIT TRAIL:
+COMPLETE 7-LAYER AUDIT TRAIL (${auditTrail.length} TRANSACTIONS):
 -----------------------------------------------------------
 ${JSON.stringify(auditTrail, null, 2)}
 
@@ -72,8 +109,8 @@ CONVERSATION TRANSCRIPT:
       <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '20px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '18px' }}>HPLM_CORE_V1.0</h1>
-          <div style={{ fontSize: '10px', color: connectionStatus.includes('ERROR') ? '#f00' : '#666' }}>
-            ENGINE_IGNITION: {connectionStatus} | MODE: SKELETON_DEMO | AUDITS_CAPTURED: {auditTrail.length}
+          <div style={{ fontSize: '10px', color: connectionStatus.includes('ERROR') || connectionStatus.includes('FAILED') ? '#f00' : '#666' }}>
+            ENGINE_IGNITION: {connectionStatus} | MODE: SKELETON_DEMO | AUDITS: {auditTrail.length}
           </div>
         </div>
         
@@ -91,7 +128,7 @@ CONVERSATION TRANSCRIPT:
             boxShadow: '0 0 5px rgba(212, 175, 55, 0.5)'
           }}
         >
-          GENERATE_FORENSIC_RECORD ({auditTrail.length} AUDITS)
+          GENERATE_FORENSIC_RECORD ({auditTrail.length})
         </button>
       </div>
 
@@ -105,7 +142,10 @@ CONVERSATION TRANSCRIPT:
             ) : (
               messages.map((m, i) => (
                 <div key={i} style={{ marginBottom: '15px', borderLeft: m.role === 'user' ? '2px solid #555' : '2px solid #0070f3', paddingLeft: '10px' }}>
-                  <div style={{ fontSize: '9px', color: '#444' }}>{m.role === 'user' ? '[SUBJECT_DATA]' : '[LOGIC_TRACE]'}</div>
+                  <div style={{ fontSize: '9px', color: '#444' }}>
+                    {m.role === 'user' ? '[SUBJECT_DATA]' : '[LOGIC_TRACE]'}
+                    {m.auditLog && ` | TRACE: ${m.auditLog.traceId}`}
+                  </div>
                   <pre style={{ whiteSpace: 'pre-wrap', color: m.role === 'user' ? '#fff' : '#0f0', margin: 0 }}>{m.content}</pre>
                 </div>
               ))
@@ -116,17 +156,12 @@ CONVERSATION TRANSCRIPT:
 
       {/* FORM SECTION */}
       <form 
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!input.trim()) return;
-          setConnectionStatus('INGESTING...');
-          handleSubmit(e);
-        }} 
+        onSubmit={handleSubmit}
         style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', display: 'flex' }}
       >
         <input
           value={input}
-          onChange={handleInputChange}
+          onChange={(e) => setInput(e.target.value)}
           placeholder="Ingest data for forensic audit..."
           style={{ flexGrow: 1, backgroundColor: '#000', border: '1px solid #0f0', color: '#0f0', padding: '15px', outline: 'none' }}
         />
