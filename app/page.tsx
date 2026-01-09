@@ -1,18 +1,32 @@
 'use client';
 
 import { useChat } from 'ai/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function HPLM_Interface() {
   const [showAudit, setShowAudit] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('STANDBY');
+  const [auditTrail, setAuditTrail] = useState<any[]>([]); // Store all audit logs
 
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    // Hard-wiring the path to ensure it hits the route that gave you the 405
     api: '/api/chat', 
     onResponse: (response) => {
-      if (response.ok) setConnectionStatus('CONNECTED_TO_PYRAMID');
-      else setConnectionStatus(`ERROR_${response.status}`);
+      if (response.ok) {
+        setConnectionStatus('CONNECTED_TO_PYRAMID');
+        
+        // Capture audit data from headers
+        const auditData = response.headers.get('X-HPLM-Audit-Data');
+        if (auditData) {
+          try {
+            const parsed = JSON.parse(auditData);
+            setAuditTrail(prev => [...prev, parsed]);
+          } catch (e) {
+            console.error('Failed to parse audit data', e);
+          }
+        }
+      } else {
+        setConnectionStatus(`ERROR_${response.status}`);
+      }
     },
     onError: (err) => {
       setConnectionStatus('FAILED_TO_REACH_API');
@@ -27,10 +41,18 @@ HPLM FORENSIC AUDIT RECORD - OFFICIAL LIABILITY LOG
 ===========================================================
 REPORT GENERATED   : ${new Date().toISOString()}
 SYSTEM ARCHITECTURE: 7-LAYER NEURAL-SYMBOLIC PYRAMID
+===========================================================
+
+COMPLETE 7-LAYER AUDIT TRAIL:
+-----------------------------------------------------------
+${JSON.stringify(auditTrail, null, 2)}
+
+-----------------------------------------------------------
+CONVERSATION TRANSCRIPT:
 -----------------------------------------------------------
 `;
     const reportBody = messages.length > 0 
-      ? messages.map(m => `[${m.role.toUpperCase()}]\n${m.content}\n`).join('\n---\n')
+      ? messages.map(m => `[${m.role.toUpperCase()}] ${new Date().toISOString()}\n${m.content}\n`).join('\n---\n')
       : "NO_TRACE_DATA_FOUND";
 
     const blob = new Blob([reportHeader + reportBody], { type: 'text/plain' });
@@ -51,11 +73,11 @@ SYSTEM ARCHITECTURE: 7-LAYER NEURAL-SYMBOLIC PYRAMID
         <div>
           <h1 style={{ margin: 0, fontSize: '18px' }}>HPLM_CORE_V1.0</h1>
           <div style={{ fontSize: '10px', color: connectionStatus.includes('ERROR') ? '#f00' : '#666' }}>
-            ENGINE_IGNITION: {connectionStatus} | MODE: SKELETON_DEMO
+            ENGINE_IGNITION: {connectionStatus} | MODE: SKELETON_DEMO | AUDITS_CAPTURED: {auditTrail.length}
           </div>
         </div>
         
-        {/* GOLD DOWNLOAD BUTTON (NOW ALWAYS ACCESSIBLE) */}
+        {/* GOLD DOWNLOAD BUTTON */}
         <button 
           onClick={downloadFullAudit} 
           style={{ 
@@ -69,7 +91,7 @@ SYSTEM ARCHITECTURE: 7-LAYER NEURAL-SYMBOLIC PYRAMID
             boxShadow: '0 0 5px rgba(212, 175, 55, 0.5)'
           }}
         >
-          GENERATE_FORENSIC_RECORD
+          GENERATE_FORENSIC_RECORD ({auditTrail.length} AUDITS)
         </button>
       </div>
 
