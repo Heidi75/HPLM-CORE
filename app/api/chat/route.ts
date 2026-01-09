@@ -25,8 +25,8 @@ export async function POST(req: Request) {
     const kernelResult = await hplmKernel.process(token);
 
     // 3. Layer 6: Audit Stream
-    // We stream the Kernel's result back to the user
-    const result = streamText({
+    // FIX: We must use 'await' here so 'result' has the .toDataStreamResponse() method
+    const result = await streamText({
       model: google('gemini-1.5-flash'),
       messages,
       system: `
@@ -38,6 +38,7 @@ export async function POST(req: Request) {
       `,
     });
 
+    // Now 'result' is resolved and this method will work perfectly
     return result.toDataStreamResponse();
 
   } catch (error) {
