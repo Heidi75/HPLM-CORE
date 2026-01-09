@@ -6,7 +6,11 @@ import { hplmKernel, HPLM_AuditPacket } from '@/layers/3-dss-solvers/solver-regi
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  console.log("🔥 HPLM_PYRAMID_INVOKED: Ignition Sequence Started"); 
   try {
+    // ... rest of your 7-layer logic
+  
+    
     const { messages } = await req.json();
     const lastMessage = messages[messages.length - 1].content;
 
