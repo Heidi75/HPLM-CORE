@@ -1,6 +1,4 @@
 // layers/3-dss-solvers/solver-registry.ts
-
-// --- THE AUDIT CONTRACT ---
 export interface HPLM_AuditPacket {
   traceId: string;
   layers: {
@@ -9,8 +7,11 @@ export interface HPLM_AuditPacket {
     l3_solver?: { domain: string; result: string; status: string };
     l4_validation?: { passed: boolean };
     l5_refinement?: { adjusted: boolean };
+    l6_audit?: { archived: boolean; logId: string }; // Added Layer 6
+    l7_enforcement?: { status: string; signature: string }; // Added Layer 7
   };
 }
+
 
 export interface LayerResult {
   layer: number;
