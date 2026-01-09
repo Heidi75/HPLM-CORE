@@ -38,44 +38,37 @@ export async function POST(req: Request) {
     auditLog.layers.l6_audit = { archived: true, logId: auditLog.traceId };
     auditLog.layers.l7_enforcement = { status: "AUTHORIZED", signature: `SIG-${auditLog.traceId.slice(-5)}` };
 
-    // --- Optional: call external model ---
-    let modelResponse = "Skeleton response only";
-    try {
-      const result = await streamText({
-        model: google('gemini-1.5-flash'),
-        messages,
-        system: `
-          [HPLM_PROTOCOL_V1_ACTIVE]
-          TRACE_DATA: ${JSON.stringify(auditLog)}
-          INSTRUCTIONS: Report the forensic state of ALL 7 LAYERS. Format as technical audit log.
-        `,
-      });
-      modelResponse = await result.text(); // fallback for streaming
-    } catch (err) {
-      console.error("External model failed:", err);
-    }
+    // --- Stream with audit data in annotations ---
+    const result = await streamText({
+      model: google('gemini-1.5-flash'),
+      messages,
+      system: `
+        [HPLM_PROTOCOL_V1_ACTIVE]
+        TRACE_DATA: ${JSON.stringify(auditLog)}
+        INSTRUCTIONS: Report the forensic state of ALL 7 LAYERS. Format as technical audit log.
+      `,
+      // Include audit log in the response metadata
+      experimental_telemetry: {
+        isEnabled: true,
+        metadata: {
+          auditLog: JSON.stringify(auditLog),
+        },
+      },
+    });
 
-    return new Response(JSON.stringify({ auditLog, modelResponse }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    return result.toDataStreamResponse({
+      // Add audit data to the response headers or data
+      headers: {
+        'X-HPLM-Audit-Trace': auditLog.traceId,
+        'X-HPLM-Audit-Data': JSON.stringify(auditLog),
+      },
     });
 
   } catch (error: any) {
     console.error("HPLM_CRITICAL_FAILURE:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
-}
-
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
 }
