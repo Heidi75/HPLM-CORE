@@ -3,21 +3,22 @@ import { streamText } from 'ai';
 import { HPLM_Token_Schema } from '@/layers/2-ftl-formalizer/token-generator';
 import { parseIncomingFile } from '@/layers/1-nil-intake/file-parser'; 
 
+export const runtime = 'edge'; // Optimizes for mobile speed
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
   const { messages, data } = await req.json();
 
-  // 1. NIL PRE-PROCESSING: Run files through the parser logic first [cite: 26, 71]
+  // 1. NIL PRE-PROCESSING: Convert messy data into Rigid Variables
   let parsedContext = "";
-  if (data?.files) {
+  if (data?.files && data.files.length > 0) {
     const analysis = await Promise.all(
       data.files.map((f: any) => parseIncomingFile(f))
     );
-    parsedContext = analysis.map(result => `EXTRACTED_DATA: ${result.rawContent}`).join("\n");
+    parsedContext = analysis.map(result => result.rawContent).join("\n");
   }
 
-  // 2. MULTI-MODAL MAPPING: Prepare the messages with raw files for Gemini [cite: 63, 67]
+  // 2. MULTI-MODAL MAPPING: Feed images/files directly to Gemini 1.5 Flash
   const initialMessages = messages.map((m: any) => {
     if (m.role === 'user' && data?.files) {
       return {
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
         content: [
           { type: 'text', text: m.content },
           ...data.files.map((file: any) => ({
-            type: file.type.startsWith('image/') ? 'image' : 'file',
+            type: 'file', // Gemini 1.5 handles images and PDFs under the 'file' abstraction in the SDK
             data: file.base64,
             mimeType: file.type,
           })),
@@ -35,20 +36,20 @@ export async function POST(req: Request) {
     return m;
   });
 
-  // 3. EXECUTION: Stream with strict Truth-Engine instructions [cite: 9, 40]
+  // 3. EXECUTION: The Truth-Engine Safe Harbor
   const result = await streamText({
     model: google('gemini-1.5-flash'),
-    system: `You are the Neural Intake Layer (NIL)[cite: 53].
-             Your role: Linguistic Interface for "messy reality"[cite: 5].
+    system: `SYSTEM_ARCH: 7-LAYER PYRAMID MOAT.
+             CURRENT_LAYER: 1 (Neural Intake Layer).
              
-             PARSED_CONTEXT: ${parsedContext}
+             PARSED_CONTEXT_FROM_NIL: ${parsedContext}
+             LOGIC_SCHEMA: ${JSON.stringify(HPLM_Token_Schema)}
 
-             TASK: 
-             1. Ingest raw unstructured data[cite: 24].
-             2. Map patterns into Rigid Variables for the Layer 2 Schema[cite: 31]: 
-                ${JSON.stringify(HPLM_Token_Schema)}
-             
-             FAILURE STATE: Do not prioritize "narrative fluency" over "physical truth"[cite: 9, 40].`,
+             OPERATIONAL_DIRECTIVE: 
+             1. You are the Linguistic Interface for the user's messy reality.
+             2. Use the provided Magnesium Taurate data or design notes to fill the Logic Schema.
+             3. If the user asks for an audit, skip narrative fluff and move to Layer 4 (Validation).
+             4. Maintain a 100% Truth-to-Input ratio.`,
     messages: initialMessages,
   });
 
