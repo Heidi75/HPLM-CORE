@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     let modelResponse = "Skeleton response only";
     try {
       const result = await streamText({
-        model: google('gemini-1.5-flash'),
+        model: google('models/gemini-1.5-flash-latest'),
         messages,
         system: `
           [HPLM_PROTOCOL_V1_ACTIVE]
