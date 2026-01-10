@@ -8,12 +8,15 @@ const google = createGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_API_KEY, 
 });
 
+
+// FIX: Change z.record(z.any()) to z.record(z.string(), z.any())
 const HPLM_Token_Schema = z.object({
   claim_id: z.string(),
   subject: z.string().describe('The entity being audited'),
-  variables: z.record(z.any()).describe('Formalized data extracted'),
+  variables: z.record(z.string(), z.any()).describe('Formalized data extracted'),
   certainty_score: z.number().min(0).max(1),
 });
+
 
 export async function intakeAndFormalize(userInput: string) {
   // 2. Use the provider instance 'google' to select the model
