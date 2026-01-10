@@ -51,7 +51,7 @@ export async function POST(req: Request) {
           INSTRUCTIONS: Report the forensic state of ALL 7 LAYERS. Format as technical audit log.
         `,
       });
-      modelResponse = await result.text();
+      modelResponse = result.textStream
       console.log("✅ Model response received");
     } catch (err: any) {
       console.error("❌ External model failed:", err);
