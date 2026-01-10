@@ -23,10 +23,19 @@ export async function process(token: SolverToken): Promise<SolverResult> {
     const userInput = token.payload.parameters.input;
     
     // Call Gemini for general queries
-    const result = await streamText({
-      model: google('gemini-2.0-flash-exp', {
-        apiKey: process.env.GOOGLE_API_KEY, // Add API key
-      }),
+    import { createGoogleGenerativeAI } from '@ai-sdk/google';
+
+// 1. Initialize the provider at the top of the file
+const googleProvider = createGoogleGenerativeAI({
+  apiKey: process.env.GOOGLE_API_KEY,
+});
+
+// ... inside your solver function ...
+
+const result = await streamText({
+  // 2. Just pass the model name string to the provider instance
+  model: googleProvider('gemini-2.0-flash-exp'),
+
       messages: [
         {
           role: 'user',
