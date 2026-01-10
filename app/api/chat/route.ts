@@ -1,12 +1,13 @@
 import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
-import { hplmKernel, HPLM_AuditPacket } from '@/layers/3-dss-solvers/solver-registry'; 
+import { hplmKernel, HPLM_AuditPacket } from '@/layers/3-dss-solvers/solver-registry';
 
 export const maxDuration = 10;
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   console.log("🔥 HPLM_PYRAMID_INVOKED");
+  console.log("API Key present:", !!process.env.GOOGLE_API_KEY); // Debug log
 
   try {
     const { messages } = await req.json();
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
       kernelResult = await hplmKernel.process(token);
       auditLog.layers.l3_solver = { domain: "GENERAL", status: kernelResult.status, result: kernelResult.message };
     } catch (err) {
-      console.error("Layer 3 failed:", err);
+      console.error("Layer 3 kernel failed:", err);
       auditLog.layers.l3_solver = { domain: "GENERAL", status: "FAILED", result: String(err) };
     }
 
@@ -38,11 +39,13 @@ export async function POST(req: Request) {
     auditLog.layers.l6_audit = { archived: true, logId: auditLog.traceId };
     auditLog.layers.l7_enforcement = { status: "AUTHORIZED", signature: `SIG-${auditLog.traceId.slice(-5)}` };
 
-    // --- Optional: call external model ---
+    // --- Call Gemini with correct model name ---
     let modelResponse = "Skeleton response only";
     try {
       const result = await streamText({
-        model: google('models/gemini-1.5-flash-latest'),
+        model: google('gemini-2.0-flash-exp', {
+          apiKey: process.env.GOOGLE_API_KEY, // Explicitly pass the key
+        }),
         messages,
         system: `
           [HPLM_PROTOCOL_V1_ACTIVE]
@@ -50,9 +53,15 @@ export async function POST(req: Request) {
           INSTRUCTIONS: Report the forensic state of ALL 7 LAYERS. Format as technical audit log.
         `,
       });
-      modelResponse = await result.text(); // Convert stream to text
-    } catch (err) {
-      console.error("External model failed:", err);
+      modelResponse = await result.text();
+      console.log("✅ Model response received");
+    } catch (err: any) {
+      console.error("❌ External model failed:", err);
+      modelResponse = `MODEL_ERROR: ${err.message}`;
+      auditLog.layers.l3_solver = { 
+        ...auditLog.layers.l3_solver, 
+        modelError: err.message 
+      };
     }
 
     return new Response(JSON.stringify({ auditLog, modelResponse }), {
@@ -73,9 +82,8 @@ export async function POST(req: Request) {
       },
     });
   }
-}
-
-export async function OPTIONS() {
+        }
+    export async function OPTIONS() {
   return new Response(null, {
     status: 204,
     headers: {
@@ -84,4 +92,5 @@ export async function OPTIONS() {
       'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
-}
+                                                                  }
+        
