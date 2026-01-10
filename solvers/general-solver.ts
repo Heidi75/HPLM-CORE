@@ -24,7 +24,9 @@ export async function process(token: SolverToken): Promise<SolverResult> {
     
     // Call Gemini for general queries
     const result = await streamText({
-      model: google('gemini-1.5-flash-latest'),
+      model: google('gemini-2.0-flash-exp', {
+        apiKey: process.env.GOOGLE_API_KEY, // Add API key
+      }),
       messages: [
         {
           role: 'user',
