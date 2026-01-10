@@ -12,10 +12,18 @@ const HPLM_Token_Schema = z.object({
 
 export async function intakeAndFormalize(userInput: string) {
   // Layer 1 (NIL) uses the LLM as a high-dimensional pattern recognizer
-  const { object } = await generateObject({
-    model: google('gemini-2.0-flash-exp', {
-      apiKey: process.env.GOOGLE_API_KEY, // Explicitly pass the API key
-    }),
+  // 1. Initialize the provider with the key
+const googleProvider = google('gemini-2.0-flash-exp', {
+  apiKey: process.env.GOOGLE_API_KEY, 
+});
+
+// 2. Use the initialized provider in your function
+const { object } = await generateObject({
+  model: googleProvider, 
+  system: `You are the Neural Intake Layer (NIL)...`,
+  // ... rest of code
+}),
+  
     system: `You are the Neural Intake Layer (NIL) of the HPLM. 
              Convert the messy user input into the HPLM Token Format. 
              Be precise; Layer 4 (The Truth Engine) will audit your work.`,
