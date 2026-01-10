@@ -11,7 +11,8 @@ export const HPLM_Token_Schema = z.object({
   // The Formalized Data
   payload: z.object({
     subject: z.string().describe('The core entity being audited'),
-    parameters: z.record(z.any()).describe('The numerical or categorical variables'),
+    // FIX: Added z.string() as the first argument to satisfy the 2-argument requirement
+    parameters: z.record(z.string(), z.any()).describe('The numerical or categorical variables'),
     constraints: z.array(z.string()).optional().describe('Known limits or rules'),
   }),
 
