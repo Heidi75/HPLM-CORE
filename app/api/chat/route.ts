@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   console.log("🔥 HPLM_PYRAMID_INVOKED");
-  console.log("API Key present:", !!process.env.GOOGLE_API_KEY); // Debug log
+  console.log("API Key present:", !!process.env.GOOGLE_API_KEY);
 
   try {
     const { messages } = await req.json();
@@ -39,13 +39,11 @@ export async function POST(req: Request) {
     auditLog.layers.l6_audit = { archived: true, logId: auditLog.traceId };
     auditLog.layers.l7_enforcement = { status: "AUTHORIZED", signature: `SIG-${auditLog.traceId.slice(-5)}` };
 
-    // --- Call Gemini with correct model name ---
+    // --- Call Gemini ---
     let modelResponse = "Skeleton response only";
     try {
       const result = await streamText({
-        model: google('gemini-2.0-flash-exp', {
-          apiKey: process.env.GOOGLE_API_KEY, // Explicitly pass the key
-        }),
+        model: google('gemini-2.0-flash-exp'),
         messages,
         system: `
           [HPLM_PROTOCOL_V1_ACTIVE]
@@ -82,8 +80,9 @@ export async function POST(req: Request) {
       },
     });
   }
-        }
-    export async function OPTIONS() {
+}
+
+export async function OPTIONS() {
   return new Response(null, {
     status: 204,
     headers: {
@@ -92,5 +91,4 @@ export async function POST(req: Request) {
       'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
-                                                                  }
-        
+}
