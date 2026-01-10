@@ -4,7 +4,11 @@ export interface HPLM_AuditPacket {
   layers: {
     l1_ingestion?: { timestamp: string; status: string };
     l2_parsing?: { tokens: number; subject: string };
-    l3_solver?: { domain: string; result: string; status: string };
+    l3_solver?: {
+      domain: string; 
+      result: string;
+      status: string;
+      modelError?: string;};
     l4_validation?: { passed: boolean };
     l5_refinement?: { adjusted: boolean };
     l6_audit?: { archived: boolean; logId: string }; // Added Layer 6
