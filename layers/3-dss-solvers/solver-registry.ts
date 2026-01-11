@@ -1,4 +1,6 @@
-// layers/3-dss-solvers/solver-registry.ts
+// Import the renamed function from your solver file
+import { executeGeneralSolver } from '../../solvers/general-solver';
+
 export interface HPLM_AuditPacket {
   traceId: string;
   layers: {
@@ -8,14 +10,14 @@ export interface HPLM_AuditPacket {
       domain: string; 
       result: string;
       status: string;
-      modelError?: string;};
+      modelError?: string;
+    };
     l4_validation?: { passed: boolean };
     l5_refinement?: { adjusted: boolean };
-    l6_audit?: { archived: boolean; logId: string }; // Added Layer 6
-    l7_enforcement?: { status: string; signature: string }; // Added Layer 7
+    l6_audit?: { archived: boolean; logId: string };
+    l7_enforcement?: { status: string; signature: string };
   };
 }
-
 
 export interface LayerResult {
   layer: number;
@@ -26,7 +28,8 @@ export interface LayerResult {
 
 // --- THE KERNEL ---
 class HPLM_Kernel {
-  private activeSolver: any = null;
+  // We'll default this to your general solver now
+  private activeSolver: any = executeGeneralSolver;
 
   public install(solver: any) {
     this.activeSolver = solver;
@@ -40,8 +43,24 @@ class HPLM_Kernel {
         message: `HPLM Skeleton: No solver for ${token.payload.subject}`
       };
     }
-    // Execution logic would go here
-    return { layer: 3, status: 'SUCCESS', message: 'Logic Processed' };
+
+    try {
+      // ACTUAL EXECUTION: Calling the function we fixed in general-solver.ts
+      const solverResponse = await this.activeSolver(token);
+
+      return {
+        layer: 3,
+        status: solverResponse.status === 'SUCCESS' ? 'SUCCESS' : 'FAIL',
+        message: solverResponse.message,
+        data: { domain: solverResponse.domain }
+      };
+    } catch (error: any) {
+      return {
+        layer: 3,
+        status: 'FAIL',
+        message: `Solver Execution Error: ${error.message}`
+      };
+    }
   }
 }
 
