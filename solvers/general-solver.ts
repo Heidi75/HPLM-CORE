@@ -1,7 +1,7 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
 
-// 1. Initialize the provider at the TOP LEVEL (Outside the function)
+// 1. Initialize the provider at the TOP LEVEL
 const googleProvider = createGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_API_KEY,
 });
@@ -21,13 +21,13 @@ export interface SolverResult {
   domain: string;
 }
 
-export async function process(token: SolverToken): Promise<SolverResult> {
+// 2. RENAMED function to avoid clashing with the 'process' keyword
+export async function executeGeneralSolver(token: SolverToken): Promise<SolverResult> {
   console.log("🔧 GENERAL SOLVER ACTIVE");
   
   try {
     const userInput = token.payload.parameters.input;
     
-    // 2. Call Gemini using the provider initialized above
     const result = await streamText({
       model: googleProvider('gemini-2.0-flash-exp'),
       messages: [
