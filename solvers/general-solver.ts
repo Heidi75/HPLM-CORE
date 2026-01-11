@@ -39,7 +39,7 @@ export async function executeGeneralSolver(token: SolverToken): Promise<SolverRe
       system: 'You are a helpful AI assistant. Provide clear, accurate responses.',
     });
     
-    const response = await result.text();
+    const response = await result.text;
     
     return {
       status: 'SUCCESS',
