@@ -1,4 +1,4 @@
-// Import the renamed function from your solver file
+// 1. ADD THIS IMPORT
 import { executeGeneralSolver } from '../../solvers/general-solver';
 
 export interface HPLM_AuditPacket {
@@ -28,7 +28,7 @@ export interface LayerResult {
 
 // --- THE KERNEL ---
 class HPLM_Kernel {
-  // We'll default this to your general solver now
+  // 2. INITIALIZE with the general solver we fixed
   private activeSolver: any = executeGeneralSolver;
 
   public install(solver: any) {
@@ -45,20 +45,20 @@ class HPLM_Kernel {
     }
 
     try {
-      // ACTUAL EXECUTION: Calling the function we fixed in general-solver.ts
+      // 3. EXECUTE the solver and wait for Gemini's response
       const solverResponse = await this.activeSolver(token);
 
       return {
         layer: 3,
         status: solverResponse.status === 'SUCCESS' ? 'SUCCESS' : 'FAIL',
-        message: solverResponse.message,
+        message: solverResponse.message, // This is the actual AI response
         data: { domain: solverResponse.domain }
       };
     } catch (error: any) {
       return {
         layer: 3,
         status: 'FAIL',
-        message: `Solver Execution Error: ${error.message}`
+        message: `Kernel Error: ${error.message}`
       };
     }
   }
